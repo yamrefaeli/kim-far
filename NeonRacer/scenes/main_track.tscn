@@ -1,0 +1,87 @@
+[gd_scene load_steps=9 format=3 uid="uid://bci7c1x0o6x0x"]
+
+[ext_resource type="PackedScene" uid="uid://c6v0j0wevj0qg" path="res://scenes/player_vehicle.tscn" id="1_vehicle"]
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_GroundCollision"] # Renamed for clarity
+size = Vector3(20, 1, 100)
+
+[sub_resource type="BoxMesh" id="BoxMesh_GroundSurface"] # Renamed for clarity
+size = Vector3(20, 1, 100)
+
+[sub_resource type="StandardMaterial3D" id="Material_GroundDark"] # Renamed and modified
+albedo_color = Color(0.02, 0.02, 0.03, 1) # Very dark grey/blue
+
+[sub_resource type="ProceduralSkyMaterial" id="SkyMaterial_DarkNeon"] # Renamed and modified
+sky_top_color = Color(0.01, 0.02, 0.05, 1) # Very dark blue
+sky_horizon_color = Color(0.05, 0.01, 0.03, 1) # Very dark purple/red
+ground_bottom_color = Color(0.01, 0.01, 0.01, 1) # Almost black
+
+[sub_resource type="Sky" id="Sky_DarkNeon"] # Renamed and modified
+sky_material = SubResource("SkyMaterial_DarkNeon")
+
+[sub_resource type="Environment" id="Environment_NeonGlow"] # Renamed and modified
+background_mode = 1 # Sky (was 2, but 1 is also Sky)
+sky = SubResource("Sky_DarkNeon")
+tonemap_mode = 2 # ACES
+glow_enabled = true
+glow_levels = PackedFloat32Array(0.0, 0.0, 0.0, 1.0, 1.0, 0.0, 0.0) # Enable levels 3 and 4 (default has 7 levels)
+glow_intensity = 0.9
+glow_strength = 0.9
+glow_bloom = 0.08
+glow_hdr_threshold = 0.8
+
+# New resources for Neon Track Edges
+[sub_resource type="StandardMaterial3D" id="Material_TrackEdge_Neon"]
+albedo_color = Color(0, 1, 0.8, 1) # Bright Turquoise
+emission_enabled = true
+emission = Color(0, 1, 0.8, 1)
+emission_energy = 3.5
+metallic = 0.2
+roughness = 0.3
+
+[sub_resource type="BoxMesh" id="BoxMesh_TrackEdge"]
+size = Vector3(0.3, 0.2, 100) # Thin and long
+
+[node name="MainTrack" type="Node3D"]
+
+[node name="Ground" type="StaticBody3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.5, 0) # Lowered ground slightly so edges can be at y=0
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="Ground"]
+shape = SubResource("BoxShape3D_GroundCollision")
+
+[node name="GroundMesh" type="MeshInstance3D" parent="Ground"] # Renamed for clarity
+mesh = SubResource("BoxMesh_GroundSurface")
+surface_material_override/0 = SubResource("Material_GroundDark")
+
+[node name="TrackEdgeLeft" type="MeshInstance3D" parent="Ground"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -10.15, 0.6, 0) # Positioned to the left of the ground mesh
+mesh = SubResource("BoxMesh_TrackEdge")
+material_override = SubResource("Material_TrackEdge_Neon")
+
+[node name="TrackEdgeRight" type="MeshInstance3D" parent="Ground"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 10.15, 0.6, 0) # Positioned to the right of the ground mesh
+mesh = SubResource("BoxMesh_TrackEdge")
+material_override = SubResource("Material_TrackEdge_Neon")
+
+
+[node name="DirectionalLight3D" type="DirectionalLight3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 0.707107, 0.707107, 0, -0.707107, 0.707107, 0, 5, 0) # Raised light a bit
+shadow_enabled = true
+light_energy = 0.7 # Slightly reduced energy as glow will contribute
+light_indirect_energy = 0.5
+
+[node name="WorldEnvironment" type="WorldEnvironment" parent="."]
+environment = SubResource("Environment_NeonGlow")
+
+[node name="Player" parent="." instance=ExtResource("1_vehicle")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.5, 0) # Adjusted Y to be on top of lowered ground
+follow_camera_node_path = NodePath("FollowCamera") # Linking the camera node path
+
+[node name="FollowCamera" type="Camera3D" parent="Player"] # This is where the NodePath from player_vehicle.gd should point
+transform = Transform3D(1, 0, 0, 0, 0.965926, 0.258819, 0, -0.258819, 0.965926, 0, 3, 6)
+rotation_degrees = Vector3(-15, 0, 0)
+current = true
+fov = 75.0 # This will be controlled by script, but initial value is here
+near = 0.1
+far = 1000.0

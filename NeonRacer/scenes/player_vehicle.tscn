@@ -1,0 +1,154 @@
+[gd_scene load_steps=10 format=3 uid="uid://c6v0j0wevj0qg"]
+
+[ext_resource type="Script" path="res://scripts/player_vehicle.gd" id="1_xqp2y"]
+
+# New Materials for CSG Vehicle
+[sub_resource type="StandardMaterial3D" id="Material_Vehicle_Body_Dark"]
+albedo_color = Color(0.05, 0.05, 0.07, 1) # Dark greyish blue
+metallic = 0.5
+roughness = 0.4
+
+[sub_resource type="StandardMaterial3D" id="Material_Vehicle_Neon_Accent"]
+albedo_color = Color(0.1, 0.5, 1, 1) # Bright Blue
+emission_enabled = true
+emission = Color(0.1, 0.5, 1, 1)
+emission_energy = 3.0
+
+# Particle Resources (from previous step, IDs might need to be unique if copy-pasted, but fine for generation)
+[sub_resource type="Gradient" id="Gradient_BoostParticles"]
+offsets = PackedFloat32Array(0, 0.589744, 1)
+colors = PackedColorArray(0.901961, 0.45098, 0.0901961, 1, 1, 0.854902, 0.203922, 0.8, 1, 1, 1, 0)
+
+[sub_resource type="GradientTexture1D" id="GradientTexture1D_BoostParticles"]
+gradient = SubResource("Gradient_BoostParticles")
+
+[sub_resource type="Curve" id="Curve_BoostParticles_Scale"]
+_data = [Vector2(0, 0.6), 0.0, 0.0, 0, 0, Vector2(0.34188, 1), 0.0, 0.0, 0, 0, Vector2(1, 0.2), 0.0, 0.0, 0, 0]
+point_count = 3
+
+[sub_resource type="CurveTexture" id="CurveTexture_BoostParticles_Scale"]
+curve = SubResource("Curve_BoostParticles_Scale")
+
+[sub_resource type="ParticleProcessMaterial" id="ParticleProcessMaterial_Boost"]
+emission_shape = 1
+emission_sphere_radius = 0.15
+particle_flag_align_y = false
+particle_flag_disable_z = true
+direction = Vector3(0, 0.1, -1)
+spread = 10.0
+initial_velocity_min = 7.0
+initial_velocity_max = 12.0
+gravity = Vector3(0, 0, 0)
+scale_min = 0.05
+scale_max = 0.25
+scale_curve = SubResource("CurveTexture_BoostParticles_Scale")
+color_ramp = SubResource("GradientTexture1D_BoostParticles")
+hue_variation_min = -0.05
+hue_variation_max = 0.05
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_BoostParticles"]
+transparency = 1
+blend_mode = 1
+shading_mode = 0
+vertex_color_use_as_albedo = true
+albedo_color = Color(1, 1, 1, 0.8)
+
+[sub_resource type="QuadMesh" id="QuadMesh_BoostParticles"]
+material = SubResource("StandardMaterial3D_BoostParticles")
+size = Vector2(0.4, 0.4)
+
+
+[node name="PlayerVehicle" type="VehicleBody3D"]
+script = ExtResource("1_xqp2y")
+max_engine_force = 100.0
+max_brake_force = 50.0
+initial_steer_angle = 0.5
+steer_angle_at_high_speed = 0.1
+speed_for_full_steer = 10.0
+speed_for_reduced_steer = 30.0
+steer_speed = 2.5
+max_boost_amount = 100.0
+boost_force_multiplier = 2.0
+boost_consumption_rate = 30.0
+boost_passive_recharge_rate = 8.0
+normal_fov = 75.0
+boost_fov = 90.0
+fov_change_speed = 5.0
+
+[node name="VehicleModel" type="CSGCombiner3D" parent="."]
+use_collision = false # Generally recommended for CSG used for visuals only
+
+[node name="Body" type="CSGBox3D" parent="VehicleModel"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0) # Centered
+size = Vector3(1.8, 0.8, 3.8) # Main body chassis
+material = SubResource("Material_Vehicle_Body_Dark")
+
+[node name="Cabin" type="CSGBox3D" parent="VehicleModel"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.65, -0.3) # On top of body, slightly back
+size = Vector3(1.2, 0.5, 1.5) # Cabin
+material = SubResource("Material_Vehicle_Body_Dark")
+
+[node name="HeadlightLeft" type="CSGCylinder3D" parent="VehicleModel"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.6, -0.1, 1.95) # Front left
+radius = 0.2
+height = 0.15
+sides = 8
+smooth_faces = true
+material = SubResource("Material_Vehicle_Neon_Accent")
+
+[node name="HeadlightRight" type="CSGCylinder3D" parent="VehicleModel"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.6, -0.1, 1.95) # Front right
+radius = 0.2
+height = 0.15
+sides = 8
+smooth_faces = true
+material = SubResource("Material_Vehicle_Neon_Accent")
+
+[node name="RearAccent" type="CSGBox3D" parent="VehicleModel"] # Adding a rear neon strip
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, -1.95)
+size = Vector3(1.7, 0.15, 0.1)
+material = SubResource("Material_Vehicle_Neon_Accent")
+
+
+[node name="WheelFrontLeft" type="VehicleWheel3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.8, -0.4, 1.5) # May need slight X adjustment based on new body width: -0.9 might be better
+use_as_steering = true
+wheel_radius = 0.4
+wheel_rest_length = 0.15
+wheel_friction_slip = 1.5
+suspension_stiffness = 20.0
+
+[node name="WheelFrontRight" type="VehicleWheel3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.8, -0.4, 1.5) # May need slight X adjustment: 0.9 might be better
+use_as_steering = true
+wheel_radius = 0.4
+wheel_rest_length = 0.15
+wheel_friction_slip = 1.5
+suspension_stiffness = 20.0
+
+[node name="WheelRearLeft" type="VehicleWheel3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.8, -0.4, -1.5) # X: -0.9
+use_as_traction = true
+wheel_radius = 0.4
+wheel_rest_length = 0.15
+wheel_friction_slip = 1.5
+suspension_stiffness = 20.0
+
+[node name="WheelRearRight" type="VehicleWheel3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.8, -0.4, -1.5) # X: 0.9
+use_as_traction = true
+wheel_radius = 0.4
+wheel_rest_length = 0.15
+wheel_friction_slip = 1.5
+suspension_stiffness = 20.0
+
+[node name="BoostParticles" type="GPUParticles3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.1, -2.0) # Adjusted Z slightly to be at the very end of the new body (3.8/2 = 1.9)
+amount = 80
+lifetime = 0.6
+one_shot = false
+speed_scale = 1.5
+explosiveness = 0.05
+randomness = 0.2
+process_material = SubResource("ParticleProcessMaterial_Boost")
+draw_pass_1 = SubResource("QuadMesh_BoostParticles")
